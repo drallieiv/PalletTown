@@ -1,0 +1,25 @@
+language: java
+
+cache:
+ directories:
+   - $HOME/.m2
+
+sudo: false
+addons:
+  apt:
+    packages:
+      - oracle-java8-installer
+
+jdk:
+  - oraclejdk8
+
+os:
+  - linux
+
+deploy:
+  provider: releases
+  api_key: "$GH_TOKEN"
+  file: "$TRAVIS_BUILD_DIR/PalletTown-gui/target/jfx/app/PalletTown-gui-*.jar"
+  skip_cleanup: true
+  on:
+    tags: true
