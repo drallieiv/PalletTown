@@ -16,3 +16,4 @@
 *.iws
 
 /target/
+/bin/
