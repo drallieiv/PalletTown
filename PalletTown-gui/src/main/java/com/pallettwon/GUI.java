@@ -1,4 +1,4 @@
-package pallettown;
+package com.pallettwon;
 
 import javafx.application.Application;
 import javafx.application.Platform;
@@ -22,12 +22,12 @@ import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import javafx.util.Pair;
 
+import static com.pallettwon.PalletTown.*;
+
 import java.io.*;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
-
-import static pallettown.PalletTown.*;
 
 /**
  * Created by Paris on 20/01/2017.
@@ -47,7 +47,11 @@ public class GUI extends Application{
 
     private static final SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss");
     private static Label statusLabel;
-
+    
+    public static void main(String args[]){
+        launch(args);
+    }
+    
     @Override
     public void start(Stage primaryStage) throws Exception {
         this.primaryStage = primaryStage;

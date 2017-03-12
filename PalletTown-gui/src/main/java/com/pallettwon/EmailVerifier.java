@@ -1,10 +1,11 @@
-package pallettown;
+package com.pallettwon;
 
 import javax.mail.*;
 import javax.mail.search.SearchTerm;
-import java.util.Properties;
 
-import static pallettown.GUI.Log;
+import static com.pallettwon.GUI.Log;
+
+import java.util.Properties;
 
 /**
  * Created by Paris on 20/01/2017.

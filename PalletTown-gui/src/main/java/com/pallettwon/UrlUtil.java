@@ -1,4 +1,4 @@
-package pallettown;
+package com.pallettwon;
 
 import java.io.BufferedReader;
 import java.io.IOException;

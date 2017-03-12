@@ -1,17 +1,17 @@
-package pallettown;
+package com.pallettwon;
 
 import javafx.application.Platform;
 import javafx.scene.control.*;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 
+import static com.pallettwon.GUI.Log;
+
 import java.io.*;
 import java.util.Scanner;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import static pallettown.GUI.Log;
 
 /**
  * Created by Paris on 20/01/2017.

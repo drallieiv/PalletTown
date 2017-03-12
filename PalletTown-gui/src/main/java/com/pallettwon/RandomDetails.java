@@ -1,4 +1,4 @@
-package pallettown;
+package com.pallettwon;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
