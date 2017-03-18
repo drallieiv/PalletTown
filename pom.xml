@@ -17,6 +17,7 @@
 
 	<modules>
 		<module>PalletTown-gui</module>
+		<module>PalletTown-core</module>
 	</modules>
 
 </project>
