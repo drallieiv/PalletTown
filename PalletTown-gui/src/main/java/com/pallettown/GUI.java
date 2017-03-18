@@ -1,4 +1,4 @@
-package com.pallettwon;
+package com.pallettown;
 
 import javafx.application.Application;
 import javafx.application.Platform;
@@ -22,7 +22,7 @@ import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import javafx.util.Pair;
 
-import static com.pallettwon.PalletTown.*;
+import static com.pallettown.PalletTown.*;
 
 import java.io.*;
 import java.text.SimpleDateFormat;

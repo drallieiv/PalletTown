@@ -1,11 +1,11 @@
-package com.pallettwon;
+package com.pallettown;
 
 import javafx.application.Platform;
 import javafx.scene.control.*;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 
-import static com.pallettwon.GUI.Log;
+import static com.pallettown.GUI.Log;
 
 import java.io.*;
 import java.util.Scanner;

@@ -1,4 +1,4 @@
-package com.pallettwon;
+package com.pallettown;
 
 import org.apache.http.HttpHost;
 import org.apache.http.client.config.RequestConfig;
@@ -9,7 +9,7 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
 
-import static com.pallettwon.GUI.Log;
+import static com.pallettown.GUI.Log;
 
 import java.io.IOException;
 

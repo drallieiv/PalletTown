@@ -1,9 +1,9 @@
-package com.pallettwon;
+package com.pallettown;
 
 import javafx.application.Platform;
 
-import static com.pallettwon.GUI.Log;
-import static com.pallettwon.GUI.setStatus;
+import static com.pallettown.GUI.Log;
+import static com.pallettown.GUI.setStatus;
 
 import java.io.FileNotFoundException;
 import java.io.InputStreamReader;
@@ -11,7 +11,7 @@ import java.util.ArrayList;
 import java.util.Scanner;
 import java.util.concurrent.TimeUnit;
 
-import com.pallettwon.GUI.AccountThread;
+import com.pallettown.GUI.AccountThread;
 
 /**
  * Created by Paris on 20/01/2017.

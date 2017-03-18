@@ -1,4 +1,4 @@
-package com.pallettwon;
+package com.pallettown;
 
 import java.util.ArrayList;
 

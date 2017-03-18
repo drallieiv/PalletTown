@@ -1,9 +1,9 @@
-package com.pallettwon;
+package com.pallettown;
 
 import javax.mail.*;
 import javax.mail.search.SearchTerm;
 
-import static com.pallettwon.GUI.Log;
+import static com.pallettown.GUI.Log;
 
 import java.util.Properties;
 

@@ -1,4 +1,4 @@
-package com.pallettwon;
+package com.pallettown;
 
 /**
  * Created by Paris on 20/01/2017.
