@@ -1,5 +1,7 @@
 package com.pallettown.core.captcha;
 
+import com.pallettown.core.errors.CaptchaSolvingException;
+
 /**
  * Generic interface for captcha providers
  * @author drallieiv
@@ -7,5 +9,5 @@ package com.pallettown.core.captcha;
  */
 public interface CaptchaProvider {
 
-	String getCaptcha();
+	String getCaptcha() throws CaptchaSolvingException;
 }

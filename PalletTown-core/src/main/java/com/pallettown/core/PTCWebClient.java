@@ -16,6 +16,7 @@ import org.jsoup.select.Elements;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.pallettown.core.captcha.CaptchaProvider;
 import com.pallettown.core.data.AccountData;
 import com.pallettown.core.errors.AccountCreationException;
 import com.pallettown.core.errors.AccountDuplicateException;
@@ -43,12 +44,11 @@ public class PTCWebClient {
 	private CookieManager cookieManager;
 
 	public PTCWebClient() {
+
 		// Initialize Http Client
 		client = new OkHttpClient();
 		cookieManager = new CookieManager();
 		client.setCookieHandler(cookieManager);
-
-		// client = HttpClientBuilder.create().build();
 	}
 
 	// Simulate new account creation age check and dump CRSF token
@@ -60,12 +60,12 @@ public class PTCWebClient {
 				Document doc = Jsoup.parse(response.body().byteStream(), "UTF-8", "");
 
 				logger.debug("Cookies are now  : {}", cookieManager.getCookieStore().getCookies());
-				
+
 				Elements tokenField = doc.select("[name=csrfmiddlewaretoken]");
 
 				if (tokenField.isEmpty()) {
 					logger.error("CSRF Token not found");
-				}else{
+				} else {
 					String crsfToken = tokenField.get(0).val();
 					sendAgeCheck(crsfToken);
 					return crsfToken;
@@ -78,6 +78,10 @@ public class PTCWebClient {
 		return null;
 	}
 
+	/**
+	 * Send the age check request, it will set up a cookie with the dod
+	 * NOTE: it could be skipped by manually adding the dod cookie ?
+	 */
 	public void sendAgeCheck(String crsfToken) throws AccountCreationException {
 		try {
 			// Create Request
@@ -96,7 +100,11 @@ public class PTCWebClient {
 			throw new AccountCreationException(e);
 		}
 	}
+	
 
+	/**
+	 * The account creation itself
+	 */
 	public void createAccount(AccountData account, String crsfToken, String captcha) throws AccountCreationException {
 		try {
 			// Create Request
@@ -117,7 +125,7 @@ public class PTCWebClient {
 					throw new AccountCreationException("Access Denied");
 				}
 
-				if(dumpError){
+				if (dumpError) {
 					File debugFile = new File("debug.html");
 					debugFile.delete();
 					logger.debug("Saving response to {}", debugFile.toPath());
@@ -165,7 +173,7 @@ public class PTCWebClient {
 	}
 
 	private Request buildAccountCreationRequest(AccountData account, String crsfToken, String captcha) throws UnsupportedEncodingException {
-		
+
 		RequestBody body = new FormEncodingBuilder()
 				// Given login and password
 				.add("username", account.username)
@@ -173,11 +181,11 @@ public class PTCWebClient {
 				.add("confirm_email", account.email)
 				.add("password", account.password)
 				.add("confirm_password", account.password)
-		
+
 				// Technical Tokens
 				.add("csrfmiddlewaretoken", crsfToken)
 				.add("g-recaptcha-response", captcha)
-		
+
 				.add("public_profile_opt_in", "False")
 				.add("screen_name", "")
 				.add("terms", "on")
@@ -204,7 +212,7 @@ public class PTCWebClient {
 				.add("country", "US")
 				.add("csrfmiddlewaretoken", csrfToken)
 				.build();
-		
+
 		Request request = new Request.Builder()
 				.url(url_ptc + pathAgeCheck)
 				.method("POST", body)
