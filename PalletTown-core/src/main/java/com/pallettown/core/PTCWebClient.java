@@ -58,6 +58,7 @@ public class PTCWebClient {
 
 			if (response.isSuccessful()) {
 				Document doc = Jsoup.parse(response.body().byteStream(), "UTF-8", "");
+				response.body().close();
 
 				logger.debug("Cookies are now  : {}", cookieManager.getCookieStore().getCookies());
 
@@ -119,6 +120,7 @@ public class PTCWebClient {
 
 				String strResponse = response.body().string();
 				Document doc = Jsoup.parse(strResponse);
+				response.body().close();
 
 				Elements accessDenied = doc.getElementsContainingOwnText("Access Denied");
 				if (!accessDenied.isEmpty()) {
@@ -162,6 +164,8 @@ public class PTCWebClient {
 						throw new AccountCreationException("Unknown creation error : " + firstErrorTxt);
 					}
 				}
+				
+				logger.debug("SUCCESS : Account created");
 
 			} else {
 				throw new AccountCreationException("PTC server bad response, HTTP " + response.code());
@@ -244,5 +248,6 @@ public class PTCWebClient {
 
 		return Headers.of(headersMap);
 	}
+
 
 }

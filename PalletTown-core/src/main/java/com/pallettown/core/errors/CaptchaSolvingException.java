@@ -12,7 +12,7 @@ public class CaptchaSolvingException extends AccountCreationException {
 
 	private static final long serialVersionUID = -1173353148853930289L;
 
-	public CaptchaSolvingException(IOException e) {
+	public CaptchaSolvingException(Exception e) {
 		super(e);
 	}
 

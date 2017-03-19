@@ -1,18 +1,21 @@
 package com.pallettown.core;
 
 import org.apache.commons.lang.RandomStringUtils;
-import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.pallettown.core.captcha.CaptchaProvider;
 import com.pallettown.core.captcha.TwoCaptchaService;
 import com.pallettown.core.data.AccountData;
 import com.pallettown.core.errors.AccountCreationException;
+import com.squareup.okhttp.ConnectionPool;
 
-public class PTCAccountCreatorTest {
+public class PalletTownCli {
 
-	@Test
-	public void accountCreationTest() throws AccountCreationException {
-
+	private static Logger LOGGER = LoggerFactory.getLogger(PalletTownCli.class);
+	
+	public static void main(String[] args) throws AccountCreationException {
+		
 		Configuration config = Configuration.getInstance();
 		if (config.checkConfiguration()) {
 			CaptchaProvider captchaProvider = new TwoCaptchaService(config.getTwoCaptchaApiKey());
@@ -28,6 +31,12 @@ public class PTCAccountCreatorTest {
 			account.setPassword("testAA00+");
 
 			creator.createAccount(account);
+
+			LOGGER.info("DONE");
+			
+			// Cleanup
+			ConnectionPool.getDefault().evictAll();
+			
 		}else{
 			// Configuration missing
 		}
