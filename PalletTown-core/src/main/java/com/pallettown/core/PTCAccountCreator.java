@@ -19,7 +19,7 @@ public class PTCAccountCreator {
 	// Create an account
 	public void createAccount(AccountData account) throws AccountCreationException {
 
-		logger.debug("Create account with username {}", account);
+		logger.info("Create account with username {}", account);
 		
 		// 1. Grab a CRSF token
 		String crsfToken = client.sendAgeCheckAndGrabCrsfToken();

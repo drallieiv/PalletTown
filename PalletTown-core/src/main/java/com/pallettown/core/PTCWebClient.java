@@ -4,25 +4,11 @@ import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
+import java.net.CookieManager;
 import java.nio.file.Files;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.HashMap;
+import java.util.Map;
 
-import org.apache.http.HttpResponse;
-import org.apache.http.NameValuePair;
-import org.apache.http.ParseException;
-import org.apache.http.client.CookieStore;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.entity.UrlEncodedFormEntity;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.impl.client.BasicCookieStore;
-import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.impl.client.LaxRedirectStrategy;
-import org.apache.http.message.BasicNameValuePair;
-import org.apache.http.util.EntityUtils;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -34,6 +20,12 @@ import com.pallettown.core.data.AccountData;
 import com.pallettown.core.errors.AccountCreationException;
 import com.pallettown.core.errors.AccountDuplicateException;
 import com.pallettown.core.errors.AccountRateLimitExceededException;
+import com.squareup.okhttp.FormEncodingBuilder;
+import com.squareup.okhttp.Headers;
+import com.squareup.okhttp.OkHttpClient;
+import com.squareup.okhttp.Request;
+import com.squareup.okhttp.RequestBody;
+import com.squareup.okhttp.Response;
 
 // Web client that will create a PTC account
 public class PTCWebClient {
@@ -44,40 +36,43 @@ public class PTCWebClient {
 	private String pathAgeCheck = "/sign-up/";
 	private String pathSignup = "/parents/sign-up";
 
-	// Dom element that contains the Cross-Site Request Forgery (CSRF) Token
-	private static final Pattern RegexCsrf = Pattern.compile("<input type='hidden' name='csrfmiddlewaretoken' value='(\\w+)' />");
+	private boolean dumpError = false;
 
-	private HttpClient client;
+	private OkHttpClient client;
 
-	private CookieStore cookieStore;
+	private CookieManager cookieManager;
 
 	public PTCWebClient() {
-		cookieStore = new BasicCookieStore();
 		// Initialize Http Client
-		client = HttpClientBuilder.create().setRedirectStrategy(new LaxRedirectStrategy()).setDefaultCookieStore(cookieStore).build();
+		client = new OkHttpClient();
+		cookieManager = new CookieManager();
+		client.setCookieHandler(cookieManager);
+
 		// client = HttpClientBuilder.create().build();
 	}
 
 	// Simulate new account creation age check and dump CRSF token
 	public String sendAgeCheckAndGrabCrsfToken() throws AccountCreationException {
 		try {
-			HttpResponse httpResponse = client.execute(buildAgeCheckRequest());
+			Response response = client.newCall(buildAgeCheckRequest()).execute();
 
-			if (httpResponse.getStatusLine().getStatusCode() == 200) {
-				String result = EntityUtils.toString(httpResponse.getEntity(), "UTF-8");
+			if (response.isSuccessful()) {
+				Document doc = Jsoup.parse(response.body().byteStream(), "UTF-8", "");
 
-				logger.debug("Cookies are now  : {}", cookieStore.getCookies());
+				logger.debug("Cookies are now  : {}", cookieManager.getCookieStore().getCookies());
+				
+				Elements tokenField = doc.select("[name=csrfmiddlewaretoken]");
 
-				Matcher matcher = RegexCsrf.matcher(result);
-				if (matcher.find()) {
-
-					String crsfToken = matcher.group(1);
+				if (tokenField.isEmpty()) {
+					logger.error("CSRF Token not found");
+				}else{
+					String crsfToken = tokenField.get(0).val();
 					sendAgeCheck(crsfToken);
 					return crsfToken;
 				}
 				logger.error("CSRF Token not found");
 			}
-		} catch (ParseException | IOException e) {
+		} catch (IOException e) {
 			logger.error("Technical error getting CSRF Token", e);
 		}
 		return null;
@@ -86,15 +81,15 @@ public class PTCWebClient {
 	public void sendAgeCheck(String crsfToken) throws AccountCreationException {
 		try {
 			// Create Request
-			HttpPost request = this.buildAgeCheckSubmitRequest(crsfToken);
+			Request request = this.buildAgeCheckSubmitRequest(crsfToken);
 
 			// Send Request
 			logger.debug("Sending age check request");
-			HttpResponse response = client.execute(request);
+			Response response = client.newCall(request).execute();
 
 			// Parse Response
-			if (response.getStatusLine().getStatusCode() == 200) {
-				logger.debug("Cookies are now : {}", cookieStore.getCookies());
+			if (response.isSuccessful()) {
+				logger.debug("Cookies are now : {}", cookieManager.getCookieStore().getCookies());
 			}
 
 		} catch (IOException e) {
@@ -105,40 +100,43 @@ public class PTCWebClient {
 	public void createAccount(AccountData account, String crsfToken, String captcha) throws AccountCreationException {
 		try {
 			// Create Request
-			HttpPost request = this.buildAccountCreationRequest(account, crsfToken, captcha);
+			Request request = this.buildAccountCreationRequest(account, crsfToken, captcha);
 
 			// Send Request
 			logger.debug("Sending creation request");
-			HttpResponse response = client.execute(request);
+			Response response = client.newCall(request).execute();
 
 			// Parse Response
-			if (response.getStatusLine().getStatusCode() == 200) {
+			if (response.isSuccessful()) {
 
-				Document doc = Jsoup.parse(response.getEntity().getContent(), "UTF-8", "");
+				String strResponse = response.body().string();
+				Document doc = Jsoup.parse(strResponse);
 
 				Elements accessDenied = doc.getElementsContainingOwnText("Access Denied");
 				if (!accessDenied.isEmpty()) {
 					throw new AccountCreationException("Access Denied");
 				}
 
-				File debugFile = new File("debug.html");
-				debugFile.delete();
-				logger.debug("Saving response to {}", debugFile.toPath());
-				try (OutputStream out = Files.newOutputStream(debugFile.toPath())) {
-					out.write(doc.select(".container").outerHtml().getBytes());
+				if(dumpError){
+					File debugFile = new File("debug.html");
+					debugFile.delete();
+					logger.debug("Saving response to {}", debugFile.toPath());
+					try (OutputStream out = Files.newOutputStream(debugFile.toPath())) {
+						out.write(doc.select(".container").outerHtml().getBytes());
+					}
 				}
 
 				Elements errors = doc.select(".errorlist");
 
 				if (!errors.isEmpty()) {
-					
-					if(errors.size() ==  1){
+
+					if (errors.size() == 1) {
 						logger.error("Invalid Captcha");
 						// Try Again maybe ?
 						throw new AccountCreationException("Captcha failed");
-					}else{
-						logger.error("{} error(s) found creating account {} :", errors.size() , account.username);
-						for (int i=0; i < errors.size()  - 1; i++) {
+					} else {
+						logger.error("{} error(s) found creating account {} :", errors.size(), account.username);
+						for (int i = 0; i < errors.size() - 1; i++) {
 							Element error = errors.get(i);
 							logger.error("- {}", error.toString().replaceAll("<[^>]*>", "").replaceAll("[\n\r]", "").trim());
 						}
@@ -158,7 +156,7 @@ public class PTCWebClient {
 				}
 
 			} else {
-				throw new AccountCreationException("PTC server bad response, HTTP " + response.getStatusLine().getStatusCode());
+				throw new AccountCreationException("PTC server bad response, HTTP " + response.code());
 			}
 
 		} catch (IOException e) {
@@ -166,73 +164,77 @@ public class PTCWebClient {
 		}
 	}
 
-	private HttpPost buildAccountCreationRequest(AccountData account, String crsfToken, String captcha) throws UnsupportedEncodingException {
-		HttpPost post = new HttpPost(url_ptc + pathSignup);
-		setHttpHeaders(post);
+	private Request buildAccountCreationRequest(AccountData account, String crsfToken, String captcha) throws UnsupportedEncodingException {
+		
+		RequestBody body = new FormEncodingBuilder()
+				// Given login and password
+				.add("username", account.username)
+				.add("email", account.email)
+				.add("confirm_email", account.email)
+				.add("password", account.password)
+				.add("confirm_password", account.password)
+		
+				// Technical Tokens
+				.add("csrfmiddlewaretoken", crsfToken)
+				.add("g-recaptcha-response", captcha)
+		
+				.add("public_profile_opt_in", "False")
+				.add("screen_name", "")
+				.add("terms", "on")
+				.build();
 
-		List<NameValuePair> params = new ArrayList<>(2);
-		// Given login and password
-		params.add(new BasicNameValuePair("username", account.username));
-		params.add(new BasicNameValuePair("email", account.email));
-		params.add(new BasicNameValuePair("confirm_email", account.email));
-		params.add(new BasicNameValuePair("password", account.password));
-		params.add(new BasicNameValuePair("confirm_password", account.password));
+		Request request = new Request.Builder()
+				.url(url_ptc + pathSignup)
+				.method("POST", body)
+				.headers(getHeaders())
+				.build();
 
-		// Technical Tokens
-		params.add(new BasicNameValuePair("csrfmiddlewaretoken", crsfToken));
-		params.add(new BasicNameValuePair("g-recaptcha-response", captcha));
-
-		params.add(new BasicNameValuePair("public_profile_opt_in", "False"));
-		params.add(new BasicNameValuePair("screen_name", ""));
-		params.add(new BasicNameValuePair("terms", "on"));
-
-		UrlEncodedFormEntity encodedFormEntity = new UrlEncodedFormEntity(params, "UTF-8");
-
-		post.setEntity(encodedFormEntity);
-
-		return post;
+		return request;
 	}
 
 	// Http Request for account creation start and age check
-	private HttpGet buildAgeCheckRequest() {
-		return new HttpGet(url_ptc + pathAgeCheck);
+	private Request buildAgeCheckRequest() {
+		return new Request.Builder().url(url_ptc + pathAgeCheck).headers(getHeaders()).build();
 	}
 
-	private HttpPost buildAgeCheckSubmitRequest(String csrfToken) throws UnsupportedEncodingException {
-		HttpPost post = new HttpPost(url_ptc + pathAgeCheck);
-		setHttpHeaders(post);
+	private Request buildAgeCheckSubmitRequest(String csrfToken) throws UnsupportedEncodingException {
 
-		List<NameValuePair> params = new ArrayList<>(2);
-		// Given login and password
-		params.add(new BasicNameValuePair("country", "US"));
-		params.add(new BasicNameValuePair("csrfmiddlewaretoken", csrfToken));
-		params.add(new BasicNameValuePair("dob", "1985-01-16"));
+		RequestBody body = new FormEncodingBuilder()
+				.add("dob", "1985-01-16")
+				.add("country", "US")
+				.add("csrfmiddlewaretoken", csrfToken)
+				.build();
+		
+		Request request = new Request.Builder()
+				.url(url_ptc + pathAgeCheck)
+				.method("POST", body)
+				.headers(getHeaders())
+				.build();
 
-		UrlEncodedFormEntity encodedFormEntity = new UrlEncodedFormEntity(params, "UTF-8");
-
-		post.setEntity(encodedFormEntity);
-
-		return post;
+		return request;
 	}
 
 	// Add all HTTP headers
-	private void setHttpHeaders(HttpPost post) {
+	private Headers getHeaders() {
+
+		Map<String, String> headersMap = new HashMap<>();
 		// Base browser User Agent
-		post.addHeader("User-Agent", "Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.87 Safari/537.36");
+		headersMap.put("User-Agent", "Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.87 Safari/537.36");
 
 		// Send Data as Form
-		post.addHeader("Content-Type", "application/x-www-form-urlencoded");
+		// headersMap.put("Content-Type", "application/x-www-form-urlencoded");
 
 		// CORS
-		post.addHeader("Origin", "https://club.pokemon.com");
-		post.addHeader("Referer", "https://club.pokemon.com/us/pokemon-trainer-club/parents/sign-up");
-		post.addHeader("Upgrade-Insecure-Requests", "https://club.pokemon.com");
+		headersMap.put("Origin", "https://club.pokemon.com");
+		headersMap.put("Referer", "https://club.pokemon.com/us/pokemon-trainer-club/parents/sign-up");
+		headersMap.put("Upgrade-Insecure-Requests", "https://club.pokemon.com");
 
-		post.addHeader("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8");
-		post.addHeader("DNT", "1");
+		headersMap.put("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8");
+		headersMap.put("DNT", "1");
 
-		post.addHeader("Accept-Encoding", "gzip, deflate, br");
-		post.addHeader("Accept-Language", "en-GB,en-US;q=0.8,en;q=0.6");
+		headersMap.put("Accept-Language", "en-GB,en-US;q=0.8,en;q=0.6");
+
+		return Headers.of(headersMap);
 	}
 
 }
