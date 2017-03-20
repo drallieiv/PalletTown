@@ -24,6 +24,7 @@ deploy:
     - "$TRAVIS_BUILD_DIR/PalletTown-gui/target/PalletTown-gui-*.jar"
     - "$TRAVIS_BUILD_DIR/PalletTown-mail/target/PalletTown-mail-*.jar"
     - "$TRAVIS_BUILD_DIR/PalletTown-core/target/PalletTown-core-*.jar"
+    - "$TRAVIS_BUILD_DIR/PalletTown-core/target/PalletTown-core-*.zip"
   skip_cleanup: true
   on:
     tags: true
