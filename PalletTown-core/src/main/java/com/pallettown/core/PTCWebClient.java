@@ -31,6 +31,8 @@ import com.squareup.okhttp.Response;
 // Web client that will create a PTC account
 public class PTCWebClient {
 
+	private static final String FIELD_MISSING = "This field is required.";
+
 	private Logger logger = LoggerFactory.getLogger(getClass());
 
 	private String url_ptc = "https://club.pokemon.com/us/pokemon-trainer-club";
@@ -140,12 +142,12 @@ public class PTCWebClient {
 
 				if (!errors.isEmpty()) {
 
-					if (errors.size() == 1) {
-						logger.error("Invalid Captcha");
+					if (errors.size() == 1 && errors.get(0).child(0).text().trim().equals(FIELD_MISSING)) {
+						logger.error("Invalid or missing Captcha");
 						// Try Again maybe ?
 						throw new AccountCreationException("Captcha failed");
 					} else {
-						logger.error("{} error(s) found creating account {} :", errors.size(), account.username);
+						logger.error("{} error(s) found creating account {} :", errors.size() - 1 , account.username);
 						for (int i = 0; i < errors.size() - 1; i++) {
 							Element error = errors.get(i);
 							logger.error("- {}", error.toString().replaceAll("<[^>]*>", "").replaceAll("[\n\r]", "").trim());

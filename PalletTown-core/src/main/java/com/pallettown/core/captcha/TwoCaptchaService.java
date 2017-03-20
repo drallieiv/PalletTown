@@ -63,6 +63,10 @@ public class TwoCaptchaService implements CaptchaProvider {
 	@Override
 	public String getCaptcha() throws CaptchaSolvingException {	
 		
+		if(this.apiKey.equals("mock")){
+			return "mockCaptcha";
+		}
+		
 		Request sendRequest = buildSendCaptchaRequest();
 
 		try {
@@ -75,9 +79,11 @@ public class TwoCaptchaService implements CaptchaProvider {
 								
 				Request resolveRequest = buildReceiveCaptchaRequest(captchaId);
 				
-				logger.info("Captcha send to 2captcha, id: {}. Waiting for a response", captchaId);
+				logger.info("Captcha sent to 2captcha, id: {}. Waiting for a response", captchaId);
 				StopWatch time = new StopWatch();
 				time.start();
+				
+				int spinnerCount = 0;
 				
 				while(time != null && time.getTime() < maxTotalTime * 1000){
 					Response solveResponse = captchaClient.newCall(resolveRequest).execute();
@@ -86,6 +92,10 @@ public class TwoCaptchaService implements CaptchaProvider {
 										
 					if(solution.contains(NOT_READY)){
 						// Keep Waiting
+						spinnerCount++;
+						if(spinnerCount % 10 == 9){
+							logger.info("...");
+						}						
 						Thread.sleep(spleepTime);
 					}else{
 						// Stop loop

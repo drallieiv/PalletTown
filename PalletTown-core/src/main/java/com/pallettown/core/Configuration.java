@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.MissingResourceException;
 import java.util.Properties;
-import java.util.ResourceBundle;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,7 +22,7 @@ public class Configuration {
 	public String twoCaptchaApiKey;
 	
 	public String mailHost;
-
+	
 	public static Configuration getInstance() {
 		if (instance == null) {
 			instance = new Configuration();

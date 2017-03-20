@@ -1,6 +1,17 @@
 package com.pallettown.core;
 
-import org.apache.commons.lang.RandomStringUtils;
+import java.io.ByteArrayOutputStream;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.io.Writer;
+
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.OptionGroup;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -8,42 +19,75 @@ import com.pallettown.core.captcha.CaptchaProvider;
 import com.pallettown.core.captcha.TwoCaptchaService;
 import com.pallettown.core.data.AccountData;
 import com.pallettown.core.errors.AccountCreationException;
-import com.squareup.okhttp.ConnectionPool;
 
 public class PalletTownCli {
 
 	private static Logger LOGGER = LoggerFactory.getLogger(PalletTownCli.class);
-	
-	public static void main(String[] args) throws AccountCreationException {
-		
-		Configuration config = Configuration.getInstance();
-		if (config.checkConfiguration()) {
-			
-			
-			// Email Host
-			String mailHost = config.getMailHost();
-			
-			CaptchaProvider captchaProvider = new TwoCaptchaService(config.getTwoCaptchaApiKey());
 
-			PTCAccountCreator creator = new PTCAccountCreator(captchaProvider);
+	public static void main(String[] args) {
 
-			AccountData account = new AccountData();
+		try {
+			LOGGER.info(" -- Start Pallet Town CLI -- ");
 
-			String userName = "paltTst" + RandomStringUtils.randomAlphanumeric(5);
+			// CLI Options
+			Options options = new Options();
 
-			account.setEmail(userName + mailHost);
-			account.setUsername(userName);
-			account.setPassword("testAA00+");
+			// Creates only 1 account
+			options.addOption(CliOptions.SINGLE_EMAIL.asOption());
+			options.addOption(CliOptions.SINGLE_USERNAME.asOption());
+			options.addOption(CliOptions.SINGLE_PASSWORD.asOption());
 
-			creator.createAccount(account);
+			// Captcha key given at commandLine
+			options.addOption(CliOptions.CK.asOption());
 
-			LOGGER.info("DONE");
-			
-			// Cleanup
-			ConnectionPool.getDefault().evictAll();
-			
-		}else{
-			// Configuration missing
+			CommandLineParser parser = new DefaultParser();
+			CommandLine cmd = parser.parse(options, args);
+
+			Configuration config = Configuration.getInstance();
+
+			if (cmd.hasOption(CliOptions.CK.shortName)) {
+				config.setTwoCaptchaApiKey(cmd.getOptionValue(CliOptions.CK.shortName));
+			}
+
+			if (config.checkConfiguration()) {
+
+				CaptchaProvider captchaProvider = new TwoCaptchaService(config.getTwoCaptchaApiKey());
+				PTCAccountCreator creator = new PTCAccountCreator(captchaProvider);
+
+				if (cmd.hasOption(CliOptions.SINGLE_EMAIL.shortName) && cmd.hasOption(CliOptions.SINGLE_USERNAME.shortName) && cmd.hasOption(CliOptions.SINGLE_PASSWORD.shortName)) {
+					LOGGER.info("Create a single account");
+
+					AccountData account = new AccountData();
+					account.setEmail(cmd.getOptionValue(CliOptions.SINGLE_EMAIL.shortName));
+					account.setUsername(cmd.getOptionValue(CliOptions.SINGLE_USERNAME.shortName));
+					account.setPassword(cmd.getOptionValue(CliOptions.SINGLE_PASSWORD.shortName));
+
+					try {
+						creator.createAccount(account);
+						LOGGER.info("DONE");
+					} catch (AccountCreationException e) {
+						LOGGER.error("\n Account Creation Failed : {}",e.getMessage());
+					}
+				} else {
+
+					LOGGER.error("\ninvalid arguments\n");
+
+					HelpFormatter formatter = new HelpFormatter();
+					StringWriter out = new StringWriter();
+					PrintWriter writer = new PrintWriter(out);
+
+					String cmdLineSyntax = " -m <email>  -u <username> -pdw <password> [-ck <captchakey>]";
+					formatter.printHelp(cmdLineSyntax, options);
+
+					String usage = out.toString();
+					LOGGER.error(usage);
+				}
+
+			} else {
+				LOGGER.error("Account creation failed, missing configuration");
+			}
+		} catch (ParseException e) {
+			LOGGER.error("Command line cannot be parsed");
 		}
 
 	}
