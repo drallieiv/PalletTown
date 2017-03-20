@@ -5,7 +5,7 @@
 		</encoder>
 	</appender>
 
-	<logger name="com.pallettown.core" level="DEBUG" additivity="false">
+	<logger name="com.pallettown.mail" level="DEBUG" additivity="false">
 		<appender-ref ref="STDOUT" />
 	</logger>
 

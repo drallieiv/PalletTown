@@ -18,6 +18,11 @@ public class PalletTownCli {
 		
 		Configuration config = Configuration.getInstance();
 		if (config.checkConfiguration()) {
+			
+			
+			// Email Host
+			String mailHost = config.getMailHost();
+			
 			CaptchaProvider captchaProvider = new TwoCaptchaService(config.getTwoCaptchaApiKey());
 
 			PTCAccountCreator creator = new PTCAccountCreator(captchaProvider);
@@ -26,7 +31,7 @@ public class PalletTownCli {
 
 			String userName = "paltTst" + RandomStringUtils.randomAlphanumeric(5);
 
-			account.setEmail(userName + "@dispostable.com");
+			account.setEmail(userName + mailHost);
 			account.setUsername(userName);
 			account.setPassword("testAA00+");
 

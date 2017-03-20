@@ -21,6 +21,8 @@ public class Configuration {
 	private static Configuration instance;
 
 	public String twoCaptchaApiKey;
+	
+	public String mailHost;
 
 	public static Configuration getInstance() {
 		if (instance == null) {
@@ -58,6 +60,7 @@ public class Configuration {
 
 			// Load Config
 			this.setTwoCaptchaApiKey(prop.getProperty("twoCaptcha.key"));
+			this.setMailHost(prop.getProperty("email.host"));
 
 		} catch (MissingResourceException e) {
 			logger.info("You must copy config.example.properties as config.properties and edit your configuration");
