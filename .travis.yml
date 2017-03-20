@@ -20,7 +20,10 @@ deploy:
   provider: releases
   api_key: "$GH_TOKEN"
   file_glob: true
-  file: "$TRAVIS_BUILD_DIR/PalletTown-gui/target/PalletTown-gui-1.0-SNAPSHOT.jar"
+  file:
+    - "$TRAVIS_BUILD_DIR/PalletTown-gui/target/PalletTown-gui-*.jar"
+    - "$TRAVIS_BUILD_DIR/PalletTown-mail/target/PalletTown-mail-*.jar"
+    - "$TRAVIS_BUILD_DIR/PalletTown-core/target/PalletTown-core-*.jar"
   skip_cleanup: true
   on:
     tags: true
