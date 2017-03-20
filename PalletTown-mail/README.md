@@ -17,6 +17,23 @@ You must own a domain name and have access to DNS entries
 add a **MX entry** redirecting emails to the server.
 You may need to add a **A entry** to map a DNS to your machine IP address, as MX entries do not work directly with IP addresses.
 
+## How to run
+
+Grab the last compiled version from https://github.com/drallieiv/PalletTown/releases
+
+or
+
+Compile it yourself (see below)
+
+Run with java :  
+`java -jar target/PalletTown-mail-1.0-SNAPSHOT.jar`
+
+## How to compile
+
+- compile the application :  
+`mvn compile`
+
+
 ## Notes
 
 The server does not store received emails in any way. If the server is not running when the email is sent, or if it stopped before completing activation, then the activation link is lost forever.
