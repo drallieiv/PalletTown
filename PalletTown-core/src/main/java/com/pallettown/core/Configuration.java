@@ -20,9 +20,9 @@ public class Configuration {
 	private static Configuration instance;
 
 	public String twoCaptchaApiKey;
-	
+
 	public String mailHost;
-	
+
 	public static Configuration getInstance() {
 		if (instance == null) {
 			instance = new Configuration();
@@ -54,6 +54,10 @@ public class Configuration {
 		try {
 			Properties prop = new Properties();
 			InputStream in = getClass().getResourceAsStream("/" + CONFIG_FILE);
+			if (in == null) {
+				logger.warn("Skipping loading configuration file, you may copy config.example.properties as config.properties and edit your configuration");
+				return;
+			}
 			prop.load(in);
 			in.close();
 
@@ -61,8 +65,6 @@ public class Configuration {
 			this.setTwoCaptchaApiKey(prop.getProperty("twoCaptcha.key"));
 			this.setMailHost(prop.getProperty("email.host"));
 
-		} catch (MissingResourceException e) {
-			logger.info("You must copy config.example.properties as config.properties and edit your configuration");
 		} catch (IOException e) {
 			logger.error("failed loading config.properties");
 		}
