@@ -11,7 +11,7 @@ public enum CliOptions {
 
 	SINGLE_EMAIL("m", "mail", true, "account email address"),
 	SINGLE_USERNAME("u", "username", true, "account username/login"),
-	SINGLE_PASSWORD("pwd", "password", true, "account password");
+	SINGLE_PASSWORD("p", "password", true, "account password");
 
 	public String shortName;
 	public String longName;
