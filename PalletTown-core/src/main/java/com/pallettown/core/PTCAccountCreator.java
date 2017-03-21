@@ -28,7 +28,7 @@ public class PTCAccountCreator {
 		// 1. Grab a CRSF token
 		String crsfToken = client.sendAgeCheckAndGrabCrsfToken();
 		if(crsfToken == null){
-			throw new AccountCreationException("Could not grab CRSF token");
+			throw new AccountCreationException("Could not grab CRSF token. pokemon-trainer-club website may be unavailable");
 		}
 		logger.debug("CRSF token found : {}", crsfToken);
 		
