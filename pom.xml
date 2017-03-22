@@ -16,7 +16,6 @@
 	</properties>
 
 	<modules>
-		<module>PalletTown-gui</module>
 		<module>PalletTown-core</module>
 		<module>PalletTown-mail</module>
 	</modules>
