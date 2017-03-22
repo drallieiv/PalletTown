@@ -1,5 +1,6 @@
 package com.pallettown.core;
 
+import java.io.File;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 
@@ -33,6 +34,9 @@ public class PalletTownCli {
 			options.addOption(CliOptions.SINGLE_EMAIL.asOption());
 			options.addOption(CliOptions.SINGLE_USERNAME.asOption());
 			options.addOption(CliOptions.SINGLE_PASSWORD.asOption());
+			
+			// Create Multiple accounts
+			options.addOption(CliOptions.MULTIPLE_ACCOUNTS.asOption());
 
 			// Captcha key given at commandLine
 			options.addOption(CliOptions.CK.asOption());
@@ -65,6 +69,11 @@ public class PalletTownCli {
 					} catch (AccountCreationException e) {
 						LOGGER.error("\n Account Creation Failed : {}",e.getMessage());
 					}
+				} else if (cmd.hasOption(CliOptions.MULTIPLE_ACCOUNTS.shortName)) {
+					String accountFileName = cmd.getOptionValue(CliOptions.MULTIPLE_ACCOUNTS.shortName);
+				
+					creator.createAccounts(accountFileName);
+					
 				} else {
 
 					LOGGER.error("\ninvalid arguments\n");
