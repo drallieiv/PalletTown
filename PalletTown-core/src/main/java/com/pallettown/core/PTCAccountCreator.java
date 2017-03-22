@@ -25,15 +25,19 @@ public class PTCAccountCreator {
 
 		logger.info("Create account with username {}", account);
 		
+		// 0. password and name check ?
+		if(!client.validateAccount(account)){
+			logger.info("Invalid account will be skipped");
+			return;
+		}
+		
 		// 1. Grab a CRSF token
 		String crsfToken = client.sendAgeCheckAndGrabCrsfToken();
 		if(crsfToken == null){
 			throw new AccountCreationException("Could not grab CRSF token. pokemon-trainer-club website may be unavailable");
 		}
 		logger.debug("CRSF token found : {}", crsfToken);
-		
-		// 2. TODO name check ?
-		
+				
 		// 3. Captcha
 		String captcha = captchaProvider.getCaptcha();
 				

@@ -8,6 +8,10 @@ import java.net.CookieManager;
 import java.nio.file.Files;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.regex.Pattern;
+
+import javax.json.Json;
+import javax.json.JsonObject;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -23,6 +27,7 @@ import com.pallettown.core.errors.AccountDuplicateException;
 import com.pallettown.core.errors.AccountRateLimitExceededException;
 import com.squareup.okhttp.FormEncodingBuilder;
 import com.squareup.okhttp.Headers;
+import com.squareup.okhttp.MediaType;
 import com.squareup.okhttp.OkHttpClient;
 import com.squareup.okhttp.Request;
 import com.squareup.okhttp.RequestBody;
@@ -36,8 +41,12 @@ public class PTCWebClient {
 	private Logger logger = LoggerFactory.getLogger(getClass());
 
 	private String url_ptc = "https://club.pokemon.com/us/pokemon-trainer-club";
+	private String url_verify_api = "https://club.pokemon.com/api/signup/verify-username";
+
 	private String pathAgeCheck = "/sign-up/";
 	private String pathSignup = "/parents/sign-up";
+
+	private final String PTC_PWD_EXPREG = "^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[#?!@$%^&><+`*()\\-\\]])[A-Za-z0-9#?!@$%^&><+`*()\\-\\]]{8,50}";
 
 	private boolean dumpError = false;
 
@@ -82,8 +91,8 @@ public class PTCWebClient {
 	}
 
 	/**
-	 * Send the age check request, it will set up a cookie with the dod
-	 * NOTE: it could be skipped by manually adding the dod cookie ?
+	 * Send the age check request, it will set up a cookie with the dod NOTE: it
+	 * could be skipped by manually adding the dod cookie ?
 	 */
 	public void sendAgeCheck(String crsfToken) throws AccountCreationException {
 		try {
@@ -103,7 +112,65 @@ public class PTCWebClient {
 			throw new AccountCreationException(e);
 		}
 	}
-	
+
+	/**
+	 * Check if the account is valid
+	 * 
+	 * @param account
+	 * @return
+	 */
+	public boolean validateAccount(AccountData account) {
+		
+		String password = account.getPassword();
+		String username = account.getUsername();
+		
+
+		// Check password validity
+		if (!Pattern.matches(PTC_PWD_EXPREG, password)) {
+			logger.error("Invalid password '{}', The password must include uppercase and lowercase letters, numbers, and symbols between 8 and 50 chars", password);
+			return false;
+		}
+
+
+		// Check username validity
+		String payload = Json.createObjectBuilder().add("name", username).build().toString();
+		RequestBody body = RequestBody.create(MediaType.parse("application/json; charset=utf-8"), payload);
+		
+		Request request = new Request.Builder()
+				.url(url_verify_api)
+				.method("POST", body)
+				.build();
+		
+		try {
+			Response response = client.newCall(request).execute();
+			if (response.isSuccessful()) {
+				
+				JsonObject jsonResponse = Json.createReader(response.body().byteStream()).readObject();
+				
+				if(! jsonResponse.getBoolean("valid")){
+					logger.error("Given username '{}' is not valid", username);
+					return false;
+				}
+				
+				if(jsonResponse.getBoolean("inuse")){
+					logger.error("Given username '{}' is already used, suggestions are {}", username, jsonResponse.getString("suggestions"));
+					return false;
+				}				
+				
+				// All passed and went OK
+				return true;
+				
+			} else {
+				logger.error("Validation API dit not respond. Assume the username is available anyway");
+				return true;
+			}
+
+		} catch (IOException e) {
+			logger.error("Error calling validation API. Assume the username is available anyway");
+			return true;
+		}
+
+	}
 
 	/**
 	 * The account creation itself
@@ -147,7 +214,7 @@ public class PTCWebClient {
 						// Try Again maybe ?
 						throw new AccountCreationException("Captcha failed");
 					} else {
-						logger.error("{} error(s) found creating account {} :", errors.size() - 1 , account.username);
+						logger.error("{} error(s) found creating account {} :", errors.size() - 1, account.username);
 						for (int i = 0; i < errors.size() - 1; i++) {
 							Element error = errors.get(i);
 							logger.error("- {}", error.toString().replaceAll("<[^>]*>", "").replaceAll("[\n\r]", "").trim());
@@ -166,7 +233,7 @@ public class PTCWebClient {
 						throw new AccountCreationException("Unknown creation error : " + firstErrorTxt);
 					}
 				}
-				
+
 				logger.debug("SUCCESS : Account created");
 
 			} else {
@@ -250,6 +317,5 @@ public class PTCWebClient {
 
 		return Headers.of(headersMap);
 	}
-
 
 }

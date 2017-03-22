@@ -29,6 +29,13 @@
 			<version>2.7.5</version>
 		</dependency>
 
+		<!-- Json Management -->
+		<dependency>
+			<groupId>org.glassfish</groupId>
+			<artifactId>javax.json</artifactId>
+			<version>1.0.4</version>
+		</dependency>
+
 		<!-- Apache Commons -->
 		<dependency>
 			<groupId>commons-io</groupId>
